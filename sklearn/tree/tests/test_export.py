@@ -2,12 +2,16 @@
 Testing for export functions of decision trees (sklearn.tree.export).
 """
 
+from re import finditer
+
 from numpy.testing import assert_equal
 from nose.tools import assert_raises
 
 from sklearn.tree import DecisionTreeClassifier, DecisionTreeRegressor
+from sklearn.ensemble import GradientBoostingClassifier
 from sklearn.tree import export_graphviz
 from sklearn.externals.six import StringIO
+from sklearn.utils.testing import assert_in
 
 # toy sample
 X = [[-2, -1], [-1, -1], [-1, -2], [1, 1], [1, 2], [2, 1]]
@@ -19,7 +23,7 @@ w = [1, 1, 1, .5, .5, .5]
 def test_graphviz_toy():
     # Check correctness of export_graphviz
     clf = DecisionTreeClassifier(max_depth=3,
-                                 min_samples_split=1,
+                                 min_samples_split=2,
                                  criterion="gini",
                                  random_state=2)
     clf.fit(X, y)
@@ -138,7 +142,7 @@ def test_graphviz_toy():
 
     # Test multi-output with weighted samples
     clf = DecisionTreeClassifier(max_depth=2,
-                                 min_samples_split=1,
+                                 min_samples_split=2,
                                  criterion="gini",
                                  random_state=2)
     clf = clf.fit(X, y2, sample_weight=w)
@@ -179,7 +183,7 @@ def test_graphviz_toy():
 
     # Test regression output with plot_options
     clf = DecisionTreeRegressor(max_depth=3,
-                                min_samples_split=1,
+                                min_samples_split=2,
                                 criterion="mse",
                                 random_state=2)
     clf.fit(X, y)
@@ -213,7 +217,7 @@ def test_graphviz_toy():
 
 def test_graphviz_errors():
     # Check for errors of export_graphviz
-    clf = DecisionTreeClassifier(max_depth=3, min_samples_split=1)
+    clf = DecisionTreeClassifier(max_depth=3, min_samples_split=2)
     clf.fit(X, y)
 
     # Check feature_names error
@@ -223,3 +227,18 @@ def test_graphviz_errors():
     # Check class_names error
     out = StringIO()
     assert_raises(IndexError, export_graphviz, clf, out, class_names=[])
+
+
+def test_friedman_mse_in_graphviz():
+    clf = DecisionTreeRegressor(criterion="friedman_mse", random_state=0)
+    clf.fit(X, y)
+    dot_data = StringIO()
+    export_graphviz(clf, out_file=dot_data)
+
+    clf = GradientBoostingClassifier(n_estimators=2, random_state=0)
+    clf.fit(X, y)
+    for estimator in clf.estimators_:
+        export_graphviz(estimator[0], out_file=dot_data)
+
+    for finding in finditer("\[.*?samples.*?\]", dot_data.getvalue()):
+        assert_in("friedman_mse", finding.group())

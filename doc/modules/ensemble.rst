@@ -156,7 +156,7 @@ picked as the splitting rule. This usually allows to reduce the variance
 of the model a bit more, at the expense of a slightly greater increase
 in bias::
 
-    >>> from sklearn.cross_validation import cross_val_score
+    >>> from sklearn.model_selection import cross_val_score
     >>> from sklearn.datasets import make_blobs
     >>> from sklearn.ensemble import RandomForestClassifier
     >>> from sklearn.ensemble import ExtraTreesClassifier
@@ -165,20 +165,20 @@ in bias::
     >>> X, y = make_blobs(n_samples=10000, n_features=10, centers=100,
     ...     random_state=0)
 
-    >>> clf = DecisionTreeClassifier(max_depth=None, min_samples_split=1,
+    >>> clf = DecisionTreeClassifier(max_depth=None, min_samples_split=2,
     ...     random_state=0)
     >>> scores = cross_val_score(clf, X, y)
     >>> scores.mean()                             # doctest: +ELLIPSIS
     0.97...
 
     >>> clf = RandomForestClassifier(n_estimators=10, max_depth=None,
-    ...     min_samples_split=1, random_state=0)
+    ...     min_samples_split=2, random_state=0)
     >>> scores = cross_val_score(clf, X, y)
     >>> scores.mean()                             # doctest: +ELLIPSIS
     0.999...
 
     >>> clf = ExtraTreesClassifier(n_estimators=10, max_depth=None,
-    ...     min_samples_split=1, random_state=0)
+    ...     min_samples_split=2, random_state=0)
     >>> scores = cross_val_score(clf, X, y)
     >>> scores.mean() > 0.999
     True
@@ -306,6 +306,9 @@ the transformation performs an implicit, non-parametric density estimation.
  * :ref:`example_manifold_plot_lle_digits.py` compares non-linear
    dimensionality reduction techniques on handwritten digits.
 
+ * :ref:`example_ensemble_plot_feature_transformation.py` compares
+   supervised and unsupervised tree based feature transformations.
+
 .. seealso::
 
    :ref:`manifold` techniques can also be useful to derive non-linear
@@ -357,7 +360,7 @@ Usage
 The following example shows how to fit an AdaBoost classifier with 100 weak
 learners::
 
-    >>> from sklearn.cross_validation import cross_val_score
+    >>> from sklearn.model_selection import cross_val_score
     >>> from sklearn.datasets import load_iris
     >>> from sklearn.ensemble import AdaBoostClassifier
 
@@ -945,7 +948,7 @@ Usage
 The following example shows how to fit the majority rule classifier::
 
    >>> from sklearn import datasets
-   >>> from sklearn import cross_validation
+   >>> from sklearn.model_selection import cross_val_score
    >>> from sklearn.linear_model import LogisticRegression
    >>> from sklearn.naive_bayes import GaussianNB
    >>> from sklearn.ensemble import RandomForestClassifier
@@ -961,7 +964,7 @@ The following example shows how to fit the majority rule classifier::
    >>> eclf = VotingClassifier(estimators=[('lr', clf1), ('rf', clf2), ('gnb', clf3)], voting='hard')
 
    >>> for clf, label in zip([clf1, clf2, clf3, eclf], ['Logistic Regression', 'Random Forest', 'naive Bayes', 'Ensemble']):
-   ...     scores = cross_validation.cross_val_score(clf, X, y, cv=5, scoring='accuracy')
+   ...     scores = cross_val_score(clf, X, y, cv=5, scoring='accuracy')
    ...     print("Accuracy: %0.2f (+/- %0.2f) [%s]" % (scores.mean(), scores.std(), label))
    Accuracy: 0.90 (+/- 0.05) [Logistic Regression]
    Accuracy: 0.93 (+/- 0.05) [Random Forest]
@@ -1038,7 +1041,7 @@ Using the `VotingClassifier` with `GridSearch`
 The `VotingClassifier` can also be used together with `GridSearch` in order
 to tune the hyperparameters of the individual estimators::
 
-   >>> from sklearn.grid_search import GridSearchCV
+   >>> from sklearn.model_selection import GridSearchCV
    >>> clf1 = LogisticRegression(random_state=1)
    >>> clf2 = RandomForestClassifier(random_state=1)
    >>> clf3 = GaussianNB()
