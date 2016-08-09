@@ -14,7 +14,7 @@ Persistence example
 -------------------
 
 It is possible to save a model in the scikit by using Python's built-in
-persistence model, namely `pickle <http://docs.python.org/library/pickle.html>`_::
+persistence model, namely `pickle <https://docs.python.org/2/library/pickle.html>`_::
 
   >>> from sklearn import svm
   >>> from sklearn import datasets
@@ -30,7 +30,7 @@ persistence model, namely `pickle <http://docs.python.org/library/pickle.html>`_
   >>> import pickle
   >>> s = pickle.dumps(clf)
   >>> clf2 = pickle.loads(s)
-  >>> clf2.predict(X[0])
+  >>> clf2.predict(X[0:1])
   array([0])
   >>> y[0]
   0

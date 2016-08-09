@@ -8,12 +8,13 @@ This module defines export functions for decision trees.
 #          Noel Dawe <noel@dawe.me>
 #          Satrajit Gosh <satrajit.ghosh@gmail.com>
 #          Trevor Stephens <trev.stephens@gmail.com>
-# Licence: BSD 3 clause
+# License: BSD 3 clause
 
 import numpy as np
 
 from ..externals import six
 
+from . import _criterion
 from . import _tree
 
 
@@ -151,13 +152,17 @@ def export_graphviz(decision_tree, out_file="tree.dot", max_depth=None,
             # Classification tree
             color = list(colors['rgb'][np.argmax(value)])
             sorted_values = sorted(value, reverse=True)
-            alpha = int(255 * (sorted_values[0] - sorted_values[1]) /
-                        (1 - sorted_values[1]))
+            if len(sorted_values) == 1:
+                alpha = 0
+            else:
+                alpha = int(np.round(255 * (sorted_values[0] - sorted_values[1]) /
+                                           (1 - sorted_values[1]), 0))
         else:
             # Regression tree or multi-output
             color = list(colors['rgb'][0])
-            alpha = int(255 * ((value - colors['bounds'][0]) /
-                               (colors['bounds'][1] - colors['bounds'][0])))
+            alpha = int(np.round(255 * ((value - colors['bounds'][0]) /
+                                        (colors['bounds'][1] -
+                                         colors['bounds'][0])), 0))
 
         # Return html color code in #RRGGBBAA format
         color.append(alpha)
@@ -169,7 +174,6 @@ def export_graphviz(decision_tree, out_file="tree.dot", max_depth=None,
 
     def node_to_str(tree, node_id, criterion):
         # Generate the node content string
-
         if tree.n_outputs == 1:
             value = tree.value[node_id][0, :]
         else:
@@ -208,7 +212,9 @@ def export_graphviz(decision_tree, out_file="tree.dot", max_depth=None,
 
         # Write impurity
         if impurity:
-            if not isinstance(criterion, six.string_types):
+            if isinstance(criterion, _criterion.FriedmanMSE):
+                criterion = "friedman_mse"
+            elif not isinstance(criterion, six.string_types):
                 criterion = "impurity"
             if labels:
                 node_string += '%s = ' % criterion
@@ -307,7 +313,7 @@ def export_graphviz(decision_tree, out_file="tree.dot", max_depth=None,
                         # Find max and min impurities for multi-output
                         colors['bounds'] = (np.min(-tree.impurity),
                                             np.max(-tree.impurity))
-                    elif tree.n_classes[0] == 1:
+                    elif tree.n_classes[0] == 1 and len(np.unique(tree.value)) != 1:
                         # Find max and min values in leaf nodes for regression
                         colors['bounds'] = (np.min(tree.value),
                                             np.max(tree.value))

@@ -47,7 +47,6 @@ def test_optics2():
     assert samples.size == 0
     assert labels[0] == -1
 
-
 def test_empty_extract():
     '''
     Test extract where fit() has not yet been run.
