@@ -10,7 +10,6 @@ at which the fixe is no longer needed.
 #
 # License: BSD 3 clause
 
-import inspect
 import warnings
 import sys
 import functools
@@ -20,6 +19,11 @@ import errno
 import numpy as np
 import scipy.sparse as sp
 import scipy
+
+try:
+    from inspect import signature
+except ImportError:
+    from ..externals.funcsigs import signature
 
 
 def _parse_version(version_string):
@@ -63,7 +67,7 @@ except ImportError:
 
 
 # little danse to see if np.copy has an 'order' keyword argument
-if 'order' in inspect.getargspec(np.copy)[0]:
+if 'order' in signature(np.copy).parameters:
     def safe_copy(X):
         # Copy, but keep the order
         return np.copy(X, order='K')
@@ -74,7 +78,7 @@ else:
 
 try:
     if (not np.allclose(np.divide(.4, 1, casting="unsafe"),
-                        np.divide(.4, 1, casting="unsafe", dtype=np.float))
+                        np.divide(.4, 1, casting="unsafe", dtype=np.float64))
             or not np.allclose(np.divide(.4, 1), .4)):
         raise TypeError('Divide not working with dtype: '
                         'https://github.com/numpy/numpy/issues/3484')
@@ -188,6 +192,15 @@ except ImportError:
     # numpy.argpartition was introduced in v 1.8.0
     def argpartition(a, kth, axis=-1, kind='introselect', order=None):
         return np.argsort(a, axis=axis, order=order)
+
+try:
+    from numpy import partition
+except ImportError:
+    warnings.warn('Using `sort` instead of partition.'
+                  'Upgrade numpy to 1.8 for better performace on large number'
+                  'of clusters')
+    def partition(a, kth, axis=-1, kind='introselect', order=None):
+        return np.sort(a, axis=axis, order=order)
 
 
 try:
@@ -339,6 +352,11 @@ else:
     from functools import partial
 
 
+def parallel_helper(obj, methodname, *args, **kwargs):
+    """Helper to workaround Python 2 limitations of pickling instance methods"""
+    return getattr(obj, methodname)(*args, **kwargs)
+
+
 if np_version < (1, 6, 2):
     # Allow bincount to accept empty arrays
     # https://github.com/numpy/numpy/commit/40f0844846a9d7665616b142407a3d74cb65a040
@@ -355,7 +373,7 @@ else:
     from numpy import bincount
 
 
-if 'exist_ok' in inspect.getargspec(os.makedirs).args:
+if 'exist_ok' in signature(os.makedirs).parameters:
     makedirs = os.makedirs
 else:
     def makedirs(name, mode=0o777, exist_ok=False):
@@ -375,3 +393,53 @@ else:
             if (not exist_ok or e.errno != errno.EEXIST
                     or not os.path.isdir(name)):
                 raise
+
+
+if np_version < (1, 8, 1):
+    def array_equal(a1, a2):
+        # copy-paste from numpy 1.8.1
+        try:
+            a1, a2 = np.asarray(a1), np.asarray(a2)
+        except:
+            return False
+        if a1.shape != a2.shape:
+            return False
+        return bool(np.asarray(a1 == a2).all())
+else:
+    from numpy import array_equal
+
+if sp_version < (0, 13, 0):
+    def rankdata(a, method='average'):
+        if method not in ('average', 'min', 'max', 'dense', 'ordinal'):
+            raise ValueError('unknown method "{0}"'.format(method))
+
+        arr = np.ravel(np.asarray(a))
+        algo = 'mergesort' if method == 'ordinal' else 'quicksort'
+        sorter = np.argsort(arr, kind=algo)
+
+        inv = np.empty(sorter.size, dtype=np.intp)
+        inv[sorter] = np.arange(sorter.size, dtype=np.intp)
+
+        if method == 'ordinal':
+            return inv + 1
+
+        arr = arr[sorter]
+        obs = np.r_[True, arr[1:] != arr[:-1]]
+        dense = obs.cumsum()[inv]
+
+        if method == 'dense':
+            return dense
+
+        # cumulative counts of each unique value
+        count = np.r_[np.nonzero(obs)[0], len(obs)]
+
+        if method == 'max':
+            return count[dense]
+
+        if method == 'min':
+            return count[dense - 1] + 1
+
+        # average method
+        return .5 * (count[dense] + count[dense - 1] + 1)
+else:
+    from scipy.stats import rankdata

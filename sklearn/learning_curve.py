@@ -17,6 +17,12 @@ from .utils import indexable
 from .utils.fixes import astype
 
 
+warnings.warn("This module was deprecated in version 0.18 in favor of the "
+              "model_selection module into which all the functions are moved."
+              " This module will be removed in 0.20",
+              DeprecationWarning)
+
+
 __all__ = ['learning_curve', 'validation_curve']
 
 
@@ -59,10 +65,22 @@ def learning_curve(estimator, X, y, train_sizes=np.linspace(0.1, 1.0, 5),
         be big enough to contain at least one sample from each class.
         (default: np.linspace(0.1, 1.0, 5))
 
-    cv : integer, cross-validation generator, optional
-        If an integer is passed, it is the number of folds (defaults to 3).
-        Specific cross-validation objects can be passed, see
-        sklearn.cross_validation module for the list of possible objects
+    cv : int, cross-validation generator or an iterable, optional
+        Determines the cross-validation splitting strategy.
+        Possible inputs for cv are:
+
+        - None, to use the default 3-fold cross-validation,
+        - integer, to specify the number of folds.
+        - An object to be used as a cross-validation generator.
+        - An iterable yielding train/test splits.
+
+        For integer/None inputs, if the estimator is a classifier and ``y`` is
+        either binary or multiclass, 
+        :class:`sklearn.model_selection.StratifiedKFold` is used. In all
+        other cases, :class:`sklearn.model_selection.KFold` is used.
+
+        Refer :ref:`User Guide <cross_validation>` for the various
+        cross-validation strategies that can be used here.
 
     scoring : string, callable or None, optional, default: None
         A string (see model evaluation documentation) or
@@ -100,7 +118,7 @@ def learning_curve(estimator, X, y, train_sizes=np.linspace(0.1, 1.0, 5),
     Notes
     -----
     See :ref:`examples/model_selection/plot_learning_curve.py
-    <example_model_selection_plot_learning_curve.py>`
+    <sphx_glr_auto_examples_model_selection_plot_learning_curve.py>`
     """
     if exploit_incremental_learning and not hasattr(estimator, "partial_fit"):
         raise ValueError("An estimator must support the partial_fit interface "
@@ -201,7 +219,7 @@ def _translate_train_sizes(train_sizes, n_max_training_samples):
     train_sizes_abs = np.unique(train_sizes_abs)
     if n_ticks > train_sizes_abs.shape[0]:
         warnings.warn("Removed duplicate entries from 'train_sizes'. Number "
-                      "of ticks will be less than than the size of "
+                      "of ticks will be less than the size of "
                       "'train_sizes' %d instead of %d)."
                       % (train_sizes_abs.shape[0], n_ticks), RuntimeWarning)
 
@@ -261,10 +279,22 @@ def validation_curve(estimator, X, y, param_name, param_range, cv=None,
     param_range : array-like, shape (n_values,)
         The values of the parameter that will be evaluated.
 
-    cv : integer, cross-validation generator, optional
-        If an integer is passed, it is the number of folds (defaults to 3).
-        Specific cross-validation objects can be passed, see
-        sklearn.cross_validation module for the list of possible objects
+    cv : int, cross-validation generator or an iterable, optional
+        Determines the cross-validation splitting strategy.
+        Possible inputs for cv are:
+
+        - None, to use the default 3-fold cross-validation,
+        - integer, to specify the number of folds.
+        - An object to be used as a cross-validation generator.
+        - An iterable yielding train/test splits.
+
+        For integer/None inputs, if the estimator is a classifier and ``y`` is
+        either binary or multiclass, 
+        :class:`sklearn.model_selection.StratifiedKFold` is used. In all
+        other cases, :class:`sklearn.model_selection.KFold` is used.
+
+        Refer :ref:`User Guide <cross_validation>` for the various
+        cross-validation strategies that can be used here.
 
     scoring : string, callable or None, optional, default: None
         A string (see model evaluation documentation) or
@@ -294,7 +324,7 @@ def validation_curve(estimator, X, y, param_name, param_range, cv=None,
     -----
     See
     :ref:`examples/model_selection/plot_validation_curve.py
-    <example_model_selection_plot_validation_curve.py>`
+    <sphx_glr_auto_examples_model_selection_plot_validation_curve.py>`
     """
     X, y = indexable(X, y)
     cv = check_cv(cv, X, y, classifier=is_classifier(estimator))
